@@ -138,11 +138,11 @@
 
   @media screen and (min-width: $tablet){
     .is-3{
-      width: 27%;
+      width: calc(calc(100% - 2*0.75rem)*3/12);
     }
 
     .is-9{
-      width: 71%;
+      width: calc(calc(100% - 2*0.75rem)*9/12);
     }
   }
 
