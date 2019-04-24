@@ -130,6 +130,20 @@
     .page-content{
       margin-left:0;
     }
+
+    .is-3, .is-9{
+      width: 100%;
+    }
+  }
+
+  @media screen and (min-width: $tablet){
+    .is-3{
+      width: 27%;
+    }
+
+    .is-9{
+      width: 71%;
+    }
   }
 
   @media screen and (min-width: $tablet) and (max-width: $desktop){
