@@ -1,8 +1,8 @@
 <template>
   <div class="section has-background-white-print">
     <document-view-header :document="document" :version="version" :promise="promise" />
-    <div v-if="document" class="columns is-block-print">
-      <div class="column is-3">
+    <div v-if="document" class="is-block-print">
+      <div class="is-block is-pulled-left is-3">
         <div class="box">
           <activities-field :document="document" />
           <field-view :document="document" :field="fields.author" />
@@ -15,12 +15,9 @@
           <field-view :document="document" :field="fields.url" style="overflow:hidden" />
           <field-view :document="document" :field="fields.quality" />
         </div>
-
-        <tool-box :document="document" />
-
       </div>
 
-      <div class="column is-9">
+      <div class="is-block is-pulled-right is-9">
         <div class="box">
           <markdown-section :document="document" :field="fields.summary" />
           <markdown-section :document="document" :field="fields.description" hide-title />
@@ -33,6 +30,11 @@
 
         <comments-box :document="document" />
       </div>
+
+      <div class="is-block is-pulled-left is-3">
+        <tool-box :document="document" />
+      </div>
+
     </div>
   </div>
 </template>

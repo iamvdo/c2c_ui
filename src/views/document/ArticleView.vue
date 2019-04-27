@@ -1,18 +1,16 @@
 <template>
   <div class="section has-background-white-print">
     <document-view-header :document="document" :version="version" :promise="promise" />
-    <div v-if="document" class="columns is-block-print">
-      <div class="column is-3 is-12-print">
+    <div v-if="document" class="is-block-print">
+      <div class="is-block is-pulled-left is-3 is-12-print">
         <div class="box">
           <activities-field :document="document" />
           <field-view :document="document" :field="fields.categories" />
           <field-view :document="document" :field="fields.article_type" />
           <field-view :document="document" :field="fields.quality" />
         </div>
-
-        <tool-box :document="document" />
       </div>
-      <div class="column is-9 is-12-print">
+      <div class="is-block is-pulled-right is-9 is-12-print">
         <div class="box">
           <markdown-section :document="document" :field="fields.summary" />
           <markdown-section :document="document" :field="fields.description" hide-title />
@@ -23,6 +21,9 @@
         <recent-outings-box v-if="!isDraftView" :document="document" />
         <images-box v-if="!isDraftView" :document="document" />
         <comments-box v-if="!isDraftView" :document="document" />
+      </div>
+      <div class="is-block is-pulled-left is-3 is-12-print">
+        <tool-box :document="document" />
       </div>
     </div>
   </div>

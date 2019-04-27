@@ -1,17 +1,16 @@
 <template>
   <div class="section has-background-white-print">
     <document-view-header :document="document" :version="version" :promise="promise" />
-    <div v-if="document" class="columns">
-      <div class="column is-3">
+    <div v-if="document" class="">
+      <div class="is-block is-pulled-left is-3">
         <div class="box">
           <field-view :document="document" :field="fields.area_type" />
           <field-view :document="document" :field="fields.quality" />
         </div>
         <map-box :document="document" />
-        <tool-box :document="document" />
       </div>
 
-      <div class="column is-9">
+      <div class="is-block is-pulled-right is-9">
         <div class="box" v-if="document.cooked.summary || document.cooked.description">
           <markdown-section :document="document" :field="fields.summary" />
           <markdown-section :document="document" :field="fields.description" />
@@ -41,6 +40,11 @@
 
         <comments-box :document="document" />
       </div>
+
+      <div class="is-block is-pulled-left is-3">
+        <tool-box :document="document" />
+      </div>
+
     </div>
   </div>
 </template>
