@@ -1,5 +1,6 @@
 <template>
-  <div class="panelBRA">
+  <div class="yeti-subpanel panelBRA">
+    <subPanelTitle>Info <abbr title="Bulletin d’estimation du risque d’avalanche">BRA</abbr></subPanelTitle>
     <div class="columns is-mobile">
       <div class="column">
         <div class="inputs-bra" :class="{ 'inputs-bra-different': bra.isDifferent }">
@@ -114,11 +115,13 @@
 <script>
 import axios from 'axios';
 
+import subPanelTitle from '@/components/yeti/SubPanelTitle.vue';
 import ol from '@/js/libs/ol';
 
 const YETI_URL_MOUNTAINS = '/mountains_WGS84.json';
 
 export default {
+  components: { subPanelTitle },
   props: {
     bra: {
       type: Object,

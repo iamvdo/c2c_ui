@@ -41,10 +41,10 @@
                 <router-link class="is-block yetitabs-link" to="/yeti/faq">FAQ ?</router-link>
               </li>
             </ul>
-            <yetiTabs :tabs="tabs" :active-tab.sync="activeTab" :document="document" />
+            <yetiTabs :tabs="tabs" :active-tab.sync="activeTab" :has-features="hasFeatures" />
           </div>
           <div class="box">
-            <yetiPanel ref="panel0" :index="0" :active-tab="activeTab" class="is-relative">
+            <panel ref="panel0" :index="0" :active-tab="activeTab" class="is-relative">
               <validation-button
                 class="is-hidden-mobile yeti-validation--top"
                 :current-error="currentError"
@@ -52,18 +52,8 @@
                 @click="compute"
                 tabindex="-1"
               />
-              <yetiSubPanel>
-                Info <abbr title="Bulletin d’estimation du risque d’avalanche">BRA</abbr>
-                <template #content>
-                  <panelBRA :bra.sync="bra" :map="yetiMap" />
-                </template>
-              </yetiSubPanel>
-              <yetiSubPanel>
-                Méthodes
-                <template #content>
-                  <panelMethodes :method.sync="method" :bra="bra" @warnAboutMethodBra="warnAboutMethodBra" />
-                </template>
-              </yetiSubPanel>
+              <subPanelBra :bra.sync="bra" :map="yetiMap" />
+              <subPanelMethods :method.sync="method" :bra="bra" @warnAboutMethodBra="warnAboutMethodBra" />
               <validation-button
                 v-show="method.type"
                 class="yeti-validation--bottom"
@@ -71,26 +61,11 @@
                 :loading="promise"
                 @click="compute"
               />
-            </yetiPanel>
+            </panel>
 
-            <yetiPanel ref="panel1" :index="1" :active-tab="activeTab">
-              <yetiSubPanel>
-                <template #content v-if="document">
-                  <p>
-                    Le document actuellement affiché sur la carte
-                  </p>
-                  <document-link :document="document">
-                    <icon-route class="document-icon" />
-                    <document-title :document="document" />
-                  </document-link>
-                </template>
-                <template #content v-else>
-                  <p>
-                    Affichez l’un des itinéraires de camptocamp au sein de YETI depuis la page du document.
-                  </p>
-                </template>
-              </yetiSubPanel>
-            </yetiPanel>
+            <panel ref="panel1" :index="1" :active-tab="activeTab">
+              <subPanelCourse :map="yetiMap" :features="features" :features-title="featuresTitle" @gpx="onGpxLoaded" />
+            </panel>
           </div>
 
           <div class="box yeti-logos">
@@ -146,10 +121,18 @@
               />
             </div>
           </div>
-          <map-view ref="map" show-recenter-on :documents="documents" />
+          <yetiMap
+            ref="map"
+            :gpx="gpx"
+            :active-tab="activeTab"
+            :valid-min-zoom="validFormData.minZoom"
+            @features="onFeatures"
+            @featuresTitle="onFeaturesTitle"
+          />
         </div>
       </div>
     </div>
+    <fa-icon icon="bullseye" />
   </div>
 </template>
 
@@ -157,14 +140,14 @@
 import axios from 'axios';
 import vueSlider from 'vue-slider-component';
 
-import panelBRA from '@/components/yeti/PanelBRA';
-import panelMethodes from '@/components/yeti/PanelMethodes';
+import panel from '@/components/yeti/Panel';
+import subPanelBra from '@/components/yeti/SubPanelBra';
+import subPanelCourse from '@/components/yeti/SubPanelCourse';
+import subPanelMethods from '@/components/yeti/SubPanelMethods';
 import yetiText from '@/components/yeti/Text';
 import ValidationButton from '@/components/yeti/ValidationButton';
-import yetiPanel from '@/components/yeti/YetiPanel';
-import yetiSubPanel from '@/components/yeti/YetiSubPanel';
+import yetiMap from '@/components/yeti/YetiMap';
 import yetiTabs from '@/components/yeti/YetiTabs';
-import c2c from '@/js/apis/c2c';
 import ol from '@/js/libs/ol';
 
 const YETI_URL_BASE =
@@ -217,7 +200,17 @@ const ERRORS = {
 export default {
   name: 'Yeti',
 
-  components: { vueSlider, ValidationButton, yetiText, yetiTabs, yetiPanel, yetiSubPanel, panelBRA, panelMethodes },
+  components: {
+    yetiMap,
+    vueSlider,
+    ValidationButton,
+    yetiText,
+    yetiTabs,
+    panel,
+    subPanelBra,
+    subPanelCourse,
+    subPanelMethods,
+  },
 
   data() {
     return {
@@ -226,8 +219,10 @@ export default {
 
       yetiMap: null,
 
-      tabs: ['Calcul', 'Traces'],
+      tabs: ['Calcul', 'Course'],
       activeTab: 0,
+
+      validFormData: VALID_FORM_DATA,
 
       bra: {
         high: null,
@@ -254,7 +249,9 @@ export default {
       mapLegend: null,
       extentLayer: null,
 
-      promiseDocument: null,
+      features: [],
+      gpx: null,
+      featuresTitle: 'Nouvelle course',
 
       areas: {},
       areasLayer: null,
@@ -268,19 +265,15 @@ export default {
     },
 
     isBraMax() {
-      return this.bra.high > VALID_FORM_DATA.braMaxMrd || this.bra.low > VALID_FORM_DATA.braMaxMrd;
+      return this.bra.high > this.validFormData.braMaxMrd || this.bra.low > this.validFormData.braMaxMrd;
     },
 
     isValidMapZoom() {
-      return this.mapZoom >= VALID_FORM_DATA.minZoom;
+      return this.mapZoom >= this.validFormData.minZoom;
     },
 
-    document() {
-      return this.promiseDocument && this.promiseDocument.data ? this.promiseDocument.data : null;
-    },
-
-    documents() {
-      return this.document ? [this.document] : null;
+    hasFeatures() {
+      return !!this.features.length;
     },
 
     areasLayerStyle() {
@@ -322,13 +315,6 @@ export default {
     this.yetiMap = this.$refs.map;
 
     this.check();
-
-    // document
-    const doc = this.$route.params.document_id;
-    const lang = this.$language.current;
-    if (doc) {
-      this.promiseDocument = c2c['route'].getCooked(doc, lang).then(this.onDocument);
-    }
 
     // area ok?
     this.$refs.map.map.on('moveend', this.onMapMoveEnd);
@@ -374,7 +360,7 @@ export default {
       if (this.formError) {
         this.currentError = ERRORS[this.formError]['simple'];
         if (this.formError === 'zoom') {
-          this.currentError += ' (actuel: ' + this.mapZoom + ' sur ' + VALID_FORM_DATA.minZoom + ')';
+          this.currentError += ' (actuel: ' + this.mapZoom + ' sur ' + this.validFormData.minZoom + ')';
         }
       } else {
         this.currentError = ERRORS['ok'];
@@ -456,7 +442,7 @@ export default {
     },
 
     extendExtent(extent) {
-      const extendedFactor = Math.min(0.5, (this.mapZoom - VALID_FORM_DATA.minZoom) / 6);
+      const extendedFactor = Math.min(0.5, (this.mapZoom - this.validFormData.minZoom) / 6);
       const extendedValue = Math.max(extent[2] - extent[0], extent[3] - extent[1]) * extendedFactor;
       return ol.extent.buffer(extent, extendedValue);
     },
@@ -485,6 +471,10 @@ export default {
 
       // put yeti layer below document layers
       this.yetiLayer.setZIndex(0);
+      // put documents on top
+      ['documentsLayer', 'waypointsLayer'].forEach((layer) => {
+        this.$refs.map.mapView[layer].setZIndex(1);
+      });
 
       // set map legend
       this.mapLegend = JSON.parse(xml.getElementsByTagName('wps:ComplexData')[2].textContent);
@@ -563,16 +553,6 @@ export default {
       this.$localStorage.set('yeti-disclaimer', 'validated');
     },
 
-    onDocument() {
-      // set min zoom for map
-      // (that will be used after document is displayed and map is fitted to extent)
-      this.$refs.map.minZoomLevel = VALID_FORM_DATA.minZoom;
-      // put document layers on top
-      ['documentsLayer', 'waypointsLayer'].forEach((layer) => {
-        this.$refs.map[layer].setZIndex(1);
-      });
-    },
-
     onAreasResult(data) {
       const areas = data.data;
       const rawFeatures = new ol.format.GeoJSON().readFeatures(areas);
@@ -626,6 +606,18 @@ export default {
         // YETI_URL_AREAS can fail
         this.areasLayer.setStyle(this.areasLayerStyle);
       }
+    },
+
+    onFeatures(features) {
+      this.features = features;
+    },
+
+    onFeaturesTitle(title) {
+      this.featuresTitle = title;
+    },
+
+    onGpxLoaded(data) {
+      this.gpx = data;
     },
   },
 };

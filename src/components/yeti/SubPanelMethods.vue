@@ -1,5 +1,6 @@
 <template>
-  <div class="panelMethodes">
+  <div class="yeti-subpanel panelMethodes">
+    <subPanelTitle>Méthodes</subPanelTitle>
     <div class="columns is-mobile yetitabs">
       <div v-for="item of Object.keys(methods)" :key="item" class="column yetitab">
         <div class="control yetitab-control" :class="{ 'yetitab-control--selected': method === item }">
@@ -196,6 +197,8 @@
 </template>
 
 <script>
+import subPanelTitle from '@/components/yeti/SubPanelTitle.vue';
+
 const DANGER = {
   min: 1,
   max: 16,
@@ -208,6 +211,7 @@ const DANGER = {
 };
 
 export default {
+  components: { subPanelTitle },
   props: {
     method: {
       type: Object,

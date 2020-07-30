@@ -13,7 +13,7 @@
           @click.prevent="setActiveTab(i)"
           @keydown="setActiveTabKeyboard($event, i)"
         >
-          {{ tab }} <span class="yeti-counter" v-if="i === 1 && document">1</span>
+          {{ tab }} <span class="yeti-counter" v-if="i === 1 && hasFeatures">1</span>
         </a>
       </li>
     </ul>
@@ -31,9 +31,9 @@ export default {
       type: Number,
       required: true,
     },
-    document: {
-      type: Object,
-      default: null,
+    hasFeatures: {
+      type: Boolean,
+      default: false,
     },
   },
   methods: {

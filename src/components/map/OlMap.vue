@@ -415,12 +415,12 @@ export default {
   methods: {
     setModifyInteractions() {
       const source = this.documentsLayer.getSource();
-      const modify = new ol.interaction.Modify({ source });
+      this.modifyInteraction = new ol.interaction.Modify({ source });
 
-      this.map.addInteraction(modify);
+      this.map.addInteraction(this.modifyInteraction);
       this.map.addInteraction(new ol.interaction.Snap({ source }));
 
-      modify.on('modifyend', (event) => {
+      this.modifyInteraction.on('modifyend', (event) => {
         for (const feature of event.features.getArray()) {
           this.updateDocumentGeometryFromFeature(feature);
         }

@@ -56,6 +56,10 @@ export default {
     color: $grey;
   }
 
+  .yeti-subpanel + .yeti-subpanel {
+    margin-top: 2rem;
+  }
+
   .content-ul {
     list-style: disc outside;
     margin-left: 2em;
