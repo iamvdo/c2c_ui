@@ -62,6 +62,7 @@
             </panel>
 
             <panel ref="panel1" :index="1" :active-tab="activeTab">
+              <subPanelCourse :map="yetiMap" :features="features" :features-title="featuresTitle" @gpx="onGpxLoaded" />
             </panel>
           </div>
 
@@ -104,6 +105,7 @@ import axios from 'axios';
 
 import panel from '@/components/yeti/Panel';
 import subPanelBra from '@/components/yeti/SubPanelBra';
+import subPanelCourse from '@/components/yeti/SubPanelCourse';
 import subPanelMethods from '@/components/yeti/SubPanelMethods';
 import tabs from '@/components/yeti/Tabs';
 import texts from '@/components/yeti/Texts';
@@ -167,6 +169,7 @@ export default {
     tabs,
     panel,
     subPanelBra,
+    subPanelCourse,
     subPanelMethods,
   },
 
@@ -205,6 +208,10 @@ export default {
       yetiLayer: null,
       yetiExtent: [],
 
+      features: [],
+      gpx: null,
+      featuresTitle: TEXTS.featuresTitle,
+
       mountains: {},
 
       areaOk: true,
@@ -237,6 +244,12 @@ export default {
     'method.potentialDanger': 'check',
     mapZoom: 'check',
     areaOk: 'check',
+    featuresTitle(newValue) {
+      // set default featuresTitle
+      if (!newValue) {
+        this.featuresTitle = TEXTS.featuresTitle;
+      }
+    },
   },
 
   created() {
@@ -389,6 +402,8 @@ export default {
       this.$localStorage.set('yeti-disclaimer', 'validated');
     },
 
+    onGpxLoaded(data) {
+      this.gpx = data;
     },
   },
 };
