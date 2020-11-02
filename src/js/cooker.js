@@ -57,6 +57,7 @@ Cooker.prototype.cook = function (locale) {
 
   if (mustCallServer) {
     return c2c.cooker(missing).then((response) => {
+      console.log(response.data);
       this.feed(missing, response.data);
 
       // complete data with previously calculated data

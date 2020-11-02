@@ -253,10 +253,11 @@ export default {
     },
 
     computePreview() {
+      console.log('compute preview');
       if (!this.preview) {
         return;
       }
-
+      console.log('cooker...');
       this.cookerPromise = cooker.cook({ value: this.value });
     },
 

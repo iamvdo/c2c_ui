@@ -13,8 +13,7 @@
 
     <div class="yeti-app">
       <div class="box yeti-overlay" v-if="showDisclaimer">
-        <h2 class="title is-3 yeti-title">Avertissement</h2>
-        <texts component="disclaimer" />
+        <yeti-article class="yeti-article--disclaimer" :article="articles.disclaimer"></yeti-article>
         <form action="#" @submit="onSubmitDisclaimer">
           <input-checkbox v-model="checkDisclaimer">
             J’ai lu et j’ai compris l’intérêt et les limites de Yéti
@@ -25,10 +24,8 @@
 
       <div class="box yeti-overlay" v-if="$route.params.page === 'faq'">
         <p><router-link to=".">Retour YETI</router-link></p>
-        <h2 class="title is-3 yeti-title">Avertissement</h2>
-        <texts component="disclaimer" />
-        <h2 class="title is-3 yeti-title">FAQ</h2>
-        <texts component="faq" />
+        <yeti-article class="yeti-article--disclaimer" :article="articles.disclaimer"></yeti-article>
+        <yeti-article :article="articles.faq"></yeti-article>
       </div>
 
       <div class="columns yeti-content">
@@ -108,12 +105,12 @@
 <script>
 import axios from 'axios';
 
+import YetiArticle from '@/components/yeti/Article';
 import Panel from '@/components/yeti/Panel';
 import SubPanelBra from '@/components/yeti/SubPanelBra';
 import SubPanelCourse from '@/components/yeti/SubPanelCourse';
 import SubPanelMethods from '@/components/yeti/SubPanelMethods';
 import Tabs from '@/components/yeti/Tabs';
-import Texts from '@/components/yeti/Texts';
 import ValidationButton from '@/components/yeti/ValidationButton';
 import YetiMap from '@/components/yeti/YetiMap';
 import ol from '@/js/libs/ol';
@@ -168,12 +165,12 @@ export default {
   name: 'Yeti',
 
   components: {
+    YetiArticle,
     Panel,
     SubPanelBra,
     SubPanelCourse,
     SubPanelMethods,
     Tabs,
-    Texts,
     ValidationButton,
     YetiMap,
   },
@@ -182,6 +179,17 @@ export default {
     return {
       showDisclaimer: false,
       checkDisclaimer: false,
+
+      articles: {
+        faq: {
+          id: 1257569,
+          title: 'FAQ',
+        },
+        disclaimer: {
+          id: 1257571,
+          title: 'Avertissement',
+        },
+      },
 
       yetiMap: null,
 
