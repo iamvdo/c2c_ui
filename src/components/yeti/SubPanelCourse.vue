@@ -39,6 +39,21 @@
         <p class="yetiform-info is-italic is-marginless" v-translate>Lines chunks</p>
         <features-list :features="features" />
       </div>
+      <sub-panel-title><span v-translate>Simplify</span></sub-panel-title>
+      <div class="columns is-mobile">
+        <div class="column" v-for="(tolerance, i) of tolerances" :key="tolerance">
+          <input
+            :id="'tolerance' + i"
+            class="is-checkradio is-primary"
+            type="radio"
+            name="tolerances"
+            :value="tolerance"
+            v-model="toleranceDistance"
+            @change="simplify"
+          />
+          <label :for="'tolerance' + i">{{ tolerancesText[i] }}</label>
+        </div>
+      </div>
       <sub-panel-title><span v-translate>Export</span></sub-panel-title>
       <div class="columns is-vcentered is-mobile">
         <div class="column">
@@ -137,6 +152,9 @@ export default {
       loading: false,
       formats: ['GPX', 'KML'],
       format: 'GPX',
+      tolerances: [0, 5, 10, 25, 50],
+      tolerancesText: [this.$gettext('No'), '5m', '10m', '25m', '50m'],
+      toleranceDistance: 0,
     };
   },
   computed: {
@@ -209,6 +227,9 @@ export default {
     },
     setFilename(ext) {
       return format(new Date(), 'yyyy-MM-dd_HH-mm-ss') + ext;
+    },
+    simplify() {
+      this.$yetix.$emit('simplify', this.toleranceDistance);
     },
   },
 };

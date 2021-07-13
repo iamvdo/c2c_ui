@@ -91,6 +91,7 @@ export default {
 
     this.$yetix.$on('removeFeature', this.removeFeature);
     this.$yetix.$on('removeFeatures', this.removeFeatures);
+    this.$yetix.$on('simplify', this.simplify);
   },
   methods: {
     addInteractions() {
@@ -248,6 +249,23 @@ export default {
 
       // set a minimum zoom level
       this.view.setZoom(Math.max(this.validMinZoom, this.view.getZoom()));
+    },
+    simplify(tolerance) {
+      let features = this.getFeaturesLayerFeatures();
+      // for each features on map
+      features.map((feature) => {
+        feature.setGeometryName('geometry');
+        let simplifiedGeometry = feature.getGeometry();
+        // first, check if tolerance is 0 == no simplification
+        if (tolerance !== 0) {
+          simplifiedGeometry = simplifiedGeometry.simplify(tolerance);
+        }
+        // then, store new geometry
+        feature.setProperties({ simplifiedGeometry });
+        // and set the new one as default
+        feature.setGeometryName('simplifiedGeometry');
+      });
+      this.emitFeaturesEvent();
     },
   },
   render() {
