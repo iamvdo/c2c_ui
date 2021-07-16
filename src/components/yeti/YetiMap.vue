@@ -3,7 +3,7 @@
     <div style="width: 100%; height: 100%">
       <div ref="map" style="width: 100%; height: 100%" @click="showLayerSwitcher = false" />
       <area-layer :map-zoom="mapZoom" />
-      <mountains-layer />
+      <mountains-layer @showMountains="onShowMountains" />
       <yeti-layer :data="yetiData" :extent="yetiExtent" />
       <route-layer :active="activeTab === 0" :features="features" :gpx="gpx" :valid-min-zoom="validMinZoom" />
       <div
@@ -118,6 +118,8 @@ export default {
       promiseDocument: null,
 
       areas: [],
+
+      highlightedMountain: null,
     };
   },
   computed: {
@@ -213,7 +215,15 @@ export default {
     },
     onMapMoveEnd(event) {
       const mapZoom = Math.floor(event.map.getView().getZoom() * 10) / 10;
-      this.$emit('update:mapZoom', mapZoom);
+      // only emit if zoom changed
+      if (this.mapZoom !== mapZoom) {
+        this.$emit('update:mapZoom', mapZoom);
+      }
+    },
+    onShowMountains(showMountains) {
+      this.cartoLayers.forEach(layer => {
+        layer.setOpacity(showMountains ? 0.5 : 1);
+      });
     },
   },
 };

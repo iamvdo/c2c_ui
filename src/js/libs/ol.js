@@ -9,6 +9,7 @@ import GeoJSON from 'ol/format/GeoJSON';
 import KML from 'ol/format/KML';
 import { LineString, Point, Polygon } from 'ol/geom';
 import { DragAndDrop, Draw, Modify, Snap } from 'ol/interaction';
+import GroupLayer from 'ol/layer/Group';
 import ImageLayer from 'ol/layer/Image';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
@@ -72,6 +73,7 @@ export default {
     Vector: VectorLayer,
     Tile: TileLayer,
     Image: ImageLayer,
+    Group: GroupLayer,
   },
 
   proj: {

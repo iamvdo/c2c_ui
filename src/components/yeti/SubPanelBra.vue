@@ -87,6 +87,12 @@
         </p>
       </div>
       <div v-if="showMountainsList">
+        <input-checkbox
+            @input="onShowMountains"
+            :value="showMountains"
+          >
+            <span v-translate>Show mountains on map</span>
+          </input-checkbox>
         <div v-if="showVisibleMountains">
           <p class="column yetiform-info" v-translate>Get avalanche bulletins from Météo-France website</p>
           <dl>
@@ -119,6 +125,7 @@ import SubPanelTitle from '@/components/yeti/SubPanelTitle.vue';
 
 export default {
   components: { Counter, SubPanelTitle },
+  inject: ['$yetix'],
   props: {
     bra: {
       type: Object,
@@ -131,6 +138,7 @@ export default {
   },
   data() {
     return {
+      showMountains: false,
       showMountainsList: false,
     };
   },
@@ -160,6 +168,10 @@ export default {
         this.bra.low = null;
         this.bra.altiThreshold = null;
       }
+    },
+
+    onShowMountains(value) {
+      this.$yetix.$emit('showMountains', value);
     },
   },
 };
