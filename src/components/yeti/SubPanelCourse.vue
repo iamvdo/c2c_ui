@@ -36,31 +36,48 @@
         </div>
       </div>
       <div class="ml-5 mb-5">
-        <p class="yetiform-info is-italic is-marginless" v-translate>Lines chunks</p>
+        <p class="is-size-7 is-italic mb-1 has-text-grey" v-translate>Lines chunks</p>
         <features-list :features="features" />
       </div>
-      <sub-panel-title><span v-translate>Export</span></sub-panel-title>
-      <div class="columns is-vcentered is-mobile">
-        <div class="column">
-          <ul class="form-export">
-            <li v-for="type of formats" :key="type" class="control is-flex">
+      <dropdown-content class="mb-5">
+        <span v-translate>Simplify</span>
+        <fa-icon
+          icon="exclamation-circle"
+          v-if="validToleranceDistance"
+          class="has-text-danger ml-1"
+          :title="$gettext('Not simplified yet')"
+        />
+        <template #content>
+          <p v-translate>Select tolerance (preview result on map)</p>
+          <div class="is-flex is-justify-content-center my-3">
+            <div v-for="(tolerance, i) of tolerances" :key="tolerance">
               <input
-                :id="'format' + type"
-                type="radio"
-                name="exportFormat"
+                :id="'tolerance' + i"
                 class="is-checkradio is-primary"
-                :value="type"
-                v-model="format"
+                type="radio"
+                name="tolerances"
+                :value="tolerance"
+                v-model="toleranceDistance"
+                @change="onPreviewSimplify"
               />
-              <label :for="'format' + type">{{ type }}</label>
-            </li>
-          </ul>
-        </div>
-        <div class="column is-narrow">
-          <button class="button is-primary" @click="downloadCourse" v-translate>Export route</button>
-        </div>
-      </div>
-      <div class="yetiform-note mt-5">
+              <label :for="'tolerance' + i">{{ tolerancesText[i] }}</label>
+            </div>
+          </div>
+          <div class="is-flex is-justify-content-space-between is-align-items-center">
+            <info>
+              {{ featuresFullNbPoints }} <span v-translate>points</span> <strong v-if="validToleranceDistance">(<span v-translate>after:</span> {{ featuresSimplifiedNbPoints }} <span v-translate>points</span>)</strong>
+            </info>
+            <button class="button is-primary" :disabled="!validToleranceDistance" @click="onSimplify" v-translate>Simplify</button>
+          </div>
+          <info type="warning" v-if="validToleranceDistance" >
+            <strong v-translate>Be careful,</strong> <span v-translate>this is a preview. Geometry is not simplified yet. Map interactions are disabled.</span>
+          </info>
+          <info type="help" class="mt-5">
+            <span v-translate>Create a simplified version of the geometry by reducing the amount of points</span>
+          </info>
+        </template>
+      </dropdown-content>
+      <info type="help">
         <p v-translate>Drawing tips</p>
         <ul class="content-ul">
           <li><strong v-translate translate-context="yeti">Draw</strong> <span v-translate>new lines chunks</span></li>
@@ -85,6 +102,27 @@
           <li><strong v-translate>Delete a line chunk</strong></li>
           <li><strong v-translate>Delete route</strong> <span v-translate>to start or load a new one</span></li>
         </ul>
+      </info>
+      <sub-panel-title><span v-translate>Export</span></sub-panel-title>
+      <div class="columns is-vcentered is-mobile">
+        <div class="column">
+          <ul class="form-export">
+            <li v-for="type of formats" :key="type" class="control is-flex">
+              <input
+                :id="'format' + type"
+                type="radio"
+                name="exportFormat"
+                class="is-checkradio is-primary"
+                :value="type"
+                v-model="format"
+              />
+              <label :for="'format' + type">{{ type }}</label>
+            </li>
+          </ul>
+        </div>
+        <div class="column is-narrow">
+          <button class="button is-primary" @click="downloadCourse" v-translate>Export route</button>
+        </div>
       </div>
     </div>
     <div v-else>
@@ -102,9 +140,9 @@
         <div class="control upload-button">
           <input ref="gpxFileInput" type="file" @change="uploadGpx" accept=".gpx" />
         </div>
-        <div class="yetiform-note mt-5">
+        <info type="help" class="mt-5">
           <p><strong v-translate>Draw right on the map</strong> <span v-translate>to start a new route</span></p>
-        </div>
+        </info>
       </div>
     </div>
   </div>
@@ -113,20 +151,25 @@
 <script>
 import { format } from 'date-fns';
 
+import DropdownContent from '@/components/yeti/DropdownContent.vue';
 import FeaturesList from '@/components/yeti/FeaturesList.vue';
+import Info from '@/components/yeti/Info.vue';
 import SubPanelTitle from '@/components/yeti/SubPanelTitle.vue';
 import { state, mutations, bus } from '@/components/yeti/yetix';
 import ol from '@/js/libs/ol';
 import utils from '@/js/utils';
 
 export default {
-  components: { FeaturesList, SubPanelTitle },
+  components: { DropdownContent, FeaturesList, Info, SubPanelTitle },
   data() {
     return {
       newFeaturesTitle: false,
       loading: false,
       formats: ['GPX', 'KML'],
       format: 'GPX',
+      tolerances: [0, 25, 50, 100, 200],
+      tolerancesText: [this.$gettext('No'), '25m', '50m', '100m', '200m'],
+      toleranceDistance: 0,
     };
   },
   computed: {
@@ -138,6 +181,30 @@ export default {
     },
     hasFeaturesTitle() {
       return !(!this.featuresTitle.length && !this.newFeaturesTitle);
+    },
+    featuresFullNbPoints() {
+      // geometry key is the initial geometry
+      return this.features.map((feature) => {
+        return feature.get('geometry').getCoordinates().length;
+      }).reduce((acc, value) => acc + value);
+    },
+    featuresSimplifiedNbPoints() {
+      // simplified is default geometry while simplifying
+      return this.features.map((feature) => {
+        return feature.getGeometry().getCoordinates().length;
+      }).reduce((acc, value) => acc + value);
+    },
+    validToleranceDistance() {
+      return this.toleranceDistance !== 0;
+    },
+  },
+  watch: {
+    toleranceDistance() {
+      if (this.toleranceDistance === 0) {
+        bus.$emit('allowInteractions');
+      } else {
+        bus.$emit('disableInteractions');
+      }
     },
   },
   methods: {
@@ -159,6 +226,8 @@ export default {
     onRemoveFeatures() {
       if (confirm(this.$gettext('Confirm delete'))) {
         bus.$emit('removeFeatures');
+        // go back to init
+        this.initializeSimplifyTool();
       }
     },
     uploadGpx(event) {
@@ -180,10 +249,14 @@ export default {
       bus.$emit('gpx', null);
     },
     downloadCourse() {
-      if (this.format === 'GPX') {
-        this.downloadFeatures(new ol.format.GPX(), '.gpx', 'application/gpx+xml');
-      } else if (this.format === 'KML') {
-        this.downloadFeatures(new ol.format.KML(), '.kml', 'application/vnd.google-earth.kml+xml');
+      // first, check if simplify is active
+      if (this.toleranceDistance !== 0 && 
+        confirm(this.$gettext('You’re trying to export the initial geometry, not the one visible on map (confirm simplification instead). Export anyway?'))) {
+        if (this.format === 'GPX') {
+          this.downloadFeatures(new ol.format.GPX(), '.gpx', 'application/gpx+xml');
+        } else if (this.format === 'KML') {
+          this.downloadFeatures(new ol.format.KML(), '.kml', 'application/vnd.google-earth.kml+xml');
+        }
       }
     },
     downloadFeatures(olFormat, extension, mimetype) {
@@ -201,6 +274,23 @@ export default {
     setFilename(ext) {
       return format(new Date(), 'yyyy-MM-dd_HH-mm-ss') + ext;
     },
+    onPreviewSimplify() {
+      // delay simplify to prevent UI freeze
+      // => 120ms (input radio transiton is 100ms)
+      setTimeout(() => {
+        bus.$emit('previewSimplify', this.toleranceDistance);
+      }, 120);
+    },
+    onSimplify() {
+      if (confirm(this.$gettext('Simplify route? You will lose initial geometry.'))) {
+        bus.$emit('simplify');
+        // go back to init
+        this.initializeSimplifyTool();
+      }
+    },
+    initializeSimplifyTool() {
+      this.toleranceDistance = 0;
+    }
   },
 };
 </script>

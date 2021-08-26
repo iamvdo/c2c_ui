@@ -1,14 +1,14 @@
 <template>
   <div class="dropdown-content">
     <div>
-      <p class="dropdown-content-title" @click="opened = !opened">
+      <h3 class="dropdown-content-title" :class="{'is-open': opened}" @click="switchOpen">
         <slot />
         <fa-icon
           class="dropdown-content-arrow is-size-6 is-pulled-right has-cursor-pointer no-print"
           icon="angle-down"
           :rotation="opened ? 180 : undefined"
         />
-      </p>
+      </h3>
     </div>
     <div v-if="opened" class="p-3">
       <slot name="content" />
@@ -22,6 +22,11 @@ export default {
     return {
       opened: false,
     };
+  },
+  methods: {
+    switchOpen() {
+      this.opened = !this.opened;
+    },
   },
 };
 </script>
@@ -41,6 +46,14 @@ export default {
 .dropdown-content-title {
   cursor: pointer;
   padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+.is-open {
+  font-weight: bold;
+  border-radius: 4px 4px 0 0;
+}
+.dropdown-content-title:hover {
+  background: $grey-lightest;
 }
 .dropdown-content-arrow {
   color: $primary;

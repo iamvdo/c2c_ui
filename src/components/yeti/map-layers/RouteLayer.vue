@@ -45,13 +45,9 @@ export default {
   watch: {
     activeTab() {
       if (this.activeTab === 0) {
-        this.drawInteraction.setActive(false);
-        this.modifyInteraction.setActive(false);
-        this.snapInteraction.setActive(false);
+        this.disableInteractions();
       } else {
-        this.drawInteraction.setActive(true);
-        this.modifyInteraction.setActive(true);
-        this.snapInteraction.setActive(true);
+        this.allowInteractions();
       }
     },
   },
@@ -83,6 +79,10 @@ export default {
     bus.$on('removeFeature', this.removeFeature);
     bus.$on('removeFeatures', this.removeFeatures);
     bus.$on('gpx', this.addFeaturesFromGpx);
+    bus.$on('previewSimplify', this.previewSimplify);
+    bus.$on('simplify', this.simplify);
+    bus.$on('allowInteractions', this.allowInteractions);
+    bus.$on('disableInteractions', this.disableInteractions);
   },
   methods: {
     addInteractions() {
@@ -104,6 +104,14 @@ export default {
       this.drawInteraction.on('drawend', this.onDrawEnd);
       this.modifyInteraction.on('modifyend', this.onModifyEnd);
 
+      this.disableInteractions();
+    },
+    allowInteractions() {
+      this.drawInteraction.setActive(true);
+      this.modifyInteraction.setActive(true);
+      this.snapInteraction.setActive(true);
+    },
+    disableInteractions() {
       this.drawInteraction.setActive(false);
       this.modifyInteraction.setActive(false);
       this.snapInteraction.setActive(false);
@@ -240,6 +248,37 @@ export default {
 
       // set a minimum zoom level
       this.view.setZoom(Math.max(this.validMinimumMapZoom, this.view.getZoom()));
+    },
+    previewSimplify(tolerance) {
+      //setTimeout(() => {
+        let features = this.getFeaturesLayerFeatures();
+        // for each features on map
+        features.map((feature) => {
+          // first, set default geometry as initial one
+          feature.setGeometryName('geometry');
+          // get the geometry
+          let geometry = feature.getGeometry();
+          let simplifiedGeometry = geometry;
+          // check if tolerance is 0 == no simplification
+          if (tolerance !== 0) {
+            simplifiedGeometry = simplifiedGeometry.simplify(tolerance);
+          }
+          // then, store new geometry
+          feature.setProperties({ simplifiedGeometry });
+          // and set the new one as default
+          feature.setGeometryName('simplifiedGeometry');
+        });
+        this.updateFeaturesFromStore();
+      //}, 100);
+    },
+    simplify() {
+      let features = this.getFeaturesLayerFeatures();
+      // for each features on map
+      features.map((feature) => {
+        feature.setGeometryName('geometry');
+        feature.setGeometry(feature.get('simplifiedGeometry'));
+        feature.setProperties({ simplifiedGeometry: null });
+      });
     },
   },
   render() {
