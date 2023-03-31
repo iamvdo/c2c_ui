@@ -60,6 +60,9 @@ let defaultState = {
   flowcapt: [],
   showFlowcapt: false,
 
+  dataAvalanche: [],
+  showDataAvalanche: false,
+
   mapZoom: 0,
   drawingMode: false,
 
@@ -153,6 +156,12 @@ export default new Vue({
     showFlowcapt() {
       return state.showFlowcapt;
     },
+    dataAvalanche() {
+      return state.dataAvalanche;
+    },
+    showDataAvalanche() {
+      return state.showDataAvalanche;
+    },
     mapZoom() {
       return state.mapZoom;
     },
@@ -222,6 +231,12 @@ export default new Vue({
     setShowFlowcapt(showFlowcapt) {
       state.showFlowcapt = showFlowcapt;
     },
+    setDataAvalanche(dataAvalanche) {
+      state.dataAvalanche = dataAvalanche;
+    },
+    setShowDataAvalanche(showDataAvalanche) {
+      state.showDataAvalanche = showDataAvalanche;
+    },
     setMapZoom(mapZoom) {
       state.mapZoom = mapZoom;
     },
@@ -278,6 +293,9 @@ export default new Vue({
     },
     fetchFlowcapt() {
       return this.fetchApi('flowcapt');
+    },
+    fetchDataAvalanche() {
+      return this.fetchApi('data-avalanche');
     },
     fetchWpsAlti(points, interpolate) {
       let params = {
