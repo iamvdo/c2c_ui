@@ -157,7 +157,7 @@ if (process.env.BUILD_ENV === 'local' || process.env.BUILD_ENV === undefined) {
     modernThumbnailsId: 0,
   };
 
-  config.ignApiKey = 'hzuh5yjuto8lqbqs2njo0che'; // Key valid for localhost (Expires 08/11/2019)
+  config.ignApiKey = '2bistv0hb8n3ohfabyxdk3z0'; // Key valid for localhost (Expires 08/11/2019)
   config.bingApiKey = 'ApgmUK6zfKqlvU9kNDbXeLFL2KvhC0BF3Jy-nUbcnkFJK_Y7UgMCyRq1NTu_ptyj';
 
   // dev bundles are huge, no check

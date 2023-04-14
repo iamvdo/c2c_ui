@@ -27,27 +27,10 @@
         </div>
       </div>
     </div>
-    <div class="ol-control opacity" v-if="isLayerLoaded">
-      <div class="opacity-slider">
-        <vue-slider
-          v-model="opacity"
-          :min="0"
-          :max="1"
-          :interval="0.01"
-          tooltip="none"
-          direction="btt"
-          :rail-style="{ background: 'rgba(0,0,0,.25)' }"
-          :process-style="{ background: 'white' }"
-          @change="onUpdateOpacity"
-        />
-      </div>
-    </div>
   </div>
 </template>
 <script>
 import layerMixin from './layer';
-
-import 'vue-slider-component/theme/default.css';
 
 import Yetix from '@/components/yeti/Yetix';
 import ol from '@/js/libs/ol';
@@ -55,9 +38,6 @@ import ol from '@/js/libs/ol';
 const OPACITY = 0.9;
 
 export default {
-  components: {
-    VueSlider: () => import(/* webpackChunkName: "slider" */ 'vue-slider-component'),
-  },
   mixins: [layerMixin],
   props: {
     data: {
@@ -71,7 +51,6 @@ export default {
   },
   data() {
     return {
-      isLayerLoaded: false,
       opacity: OPACITY,
       showLegend: undefined,
       mapLegend: null,
@@ -80,6 +59,9 @@ export default {
   computed: {
     showAreas() {
       return Yetix.showAreas;
+    },
+    showYeti() {
+      return Yetix.showYeti;
     },
   },
   watch: {
@@ -96,6 +78,10 @@ export default {
     showAreas() {
       // switch classname when showareas updates
       this.setLayerClassName();
+    },
+    showYeti() {
+      this.layer.setVisible(this.showYeti);
+      this.extentLayer.setVisible(this.showYeti);
     },
   },
   created() {
@@ -137,12 +123,13 @@ export default {
     this.map.addLayer(this.layer);
     this.map.addLayer(this.extentLayer);
 
+    Yetix.setYetiLayer(this.layer);
+
     this.setLayerClassName();
   },
   methods: {
     clearLayers() {
       this.layer.setSource(null);
-      this.isLayerLoaded = false;
 
       this.extentLayer.getSource().clear();
     },
@@ -169,12 +156,9 @@ export default {
         })
       );
       // source is set
-      this.isLayerLoaded = true;
+      Yetix.setYetiOk(true);
       // set map legend
       this.setLegend(xml);
-    },
-    onUpdateOpacity() {
-      this.layer.setOpacity(this.opacity);
     },
     setLegend(xml) {
       this.mapLegend = JSON.parse(xml.getElementsByTagName('wps:ComplexData')[2].textContent);
@@ -244,40 +228,6 @@ export default {
   }
 }
 
-.opacity {
-  position: absolute;
-  z-index: 5;
-  top: 3.5rem;
-  right: 1.25rem;
-
-  .opacity-slider {
-    font-size: 1.14em;
-    margin: 1px;
-    width: 1.375em;
-    padding: 1rem 0;
-    background: $grey-dark;
-    border-radius: 2px;
-
-    &:hover {
-      background: $grey;
-    }
-  }
-
-  .vue-slider {
-    padding: 0 9px !important;
-    height: 300px !important;
-    max-height: 30vh;
-  }
-
-  .vue-slider-process {
-    background: $white;
-  }
-
-  .vue-slider-rail {
-    background: $black;
-  }
-}
-
 @media screen and (max-width: $tablet) {
   .legend {
     top: 0.5rem;
@@ -285,10 +235,6 @@ export default {
     .legend-content {
       margin-left: 0.5rem;
     }
-  }
-
-  .opacity {
-    top: 2.75rem;
   }
 }
 </style>

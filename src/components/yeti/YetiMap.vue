@@ -14,51 +14,9 @@
         class="ol-control ol-control-layer-switcher-button"
         :title="$gettext('Layers', 'Map controls')"
       >
-        <button @click.stop="showLayerSwitcher = !showLayerSwitcher">
-          <fa-layers>
-            <fa-icon icon="layer-group" width="100%" />
-            <fa-icon v-if="atLeastOneYetiLayerIsShown" icon="circle" transform="shrink-2 up-10 right-10" />
-            <fa-icon
-              v-if="atLeastOneYetiLayerIsShown"
-              icon="check-circle"
-              inverse
-              transform="shrink-2 up-10 right-10"
-              class="icon-notification"
-            />
-          </fa-layers>
+        <button @click.stop="activeYetiTab">
+          <fa-icon icon="layer-group" width="100%" />
         </button>
-      </div>
-
-      <div v-show="showLayerSwitcher" ref="layerSwitcher" class="ol-control ol-control-layer-switcher" @click.stop="">
-        <div>
-          <header v-translate>Base layer</header>
-          <div v-for="(layer, i) of reactiveCartoLayers" :key="layer.title" class="map-control-listitem">
-            <input
-              :id="'carto-checkbox' + i"
-              :checked="layer.id == visibleCartoLayerId"
-              type="radio"
-              @change="visibleCartoLayerId = layer.id"
-            />
-            <label :for="'carto-checkbox' + i">{{ $gettext(layer.title, 'Map layer') }}</label>
-          </div>
-        </div>
-        <div>
-          <header v-translate>Slopes</header>
-          <div v-for="(layer, i) of reactiveDataLayers" :key="layer.title" class="map-control-listitem">
-            <input
-              :id="'data-checkbox' + i"
-              :checked="layer.visible"
-              type="checkbox"
-              @change="toggleMapDataLayer(layer)"
-            />
-            <label :for="'data-checkbox' + i">{{ $gettext(layer.title, 'Map slopes layer') }}</label>
-          </div>
-          <header>YETI</header>
-          <div v-for="(layer, i) of yetiLayers" :key="layer.title" class="map-control-listitem">
-            <input :id="'yeti-checkbox' + i" :checked="layer.checked" type="checkbox" @change="layer.action" />
-            <label :for="'yeti-checkbox' + i">{{ layer.title }}</label>
-          </div>
-        </div>
       </div>
 
       <div ref="recenterOnControl" class="ol-control ol-control-recenter-on">
@@ -95,10 +53,6 @@
 </template>
 
 <script>
-import { cartoLayers, dataLayers } from '../map/map-layers';
-let c2c_cartoLayers;
-let c2c_dataLayers;
-
 import AreaLayer from './map-layers/AreaLayer.vue';
 import AvalancheBulletinsLayer from './map-layers/AvalancheBulletinsLayer.vue';
 import FlowcaptLayer from './map-layers/FlowcaptLayer.vue';
@@ -106,13 +60,14 @@ import NivosesLayer from './map-layers/NivosesLayer.vue';
 import RommaLayer from './map-layers/RommaLayer.vue';
 import RouteLayer from './map-layers/RouteLayer.vue';
 import YetiLayer from './map-layers/YetiLayer.vue';
+import { cartoLayers, dataLayers } from './map-layers/map-layers';
 
 import Yetix from '@/components/yeti/Yetix';
 import photon from '@/js/apis/photon';
 import ol from '@/js/libs/ol';
 
 const DEFAULT_CENTER = [6.25, 45.15];
-const DEFAULT_ZOOM = 6;
+const DEFAULT_ZOOM = 9;
 const MAX_ZOOM = 19;
 
 export default {
@@ -137,32 +92,22 @@ export default {
   },
   data() {
     return {
-      showLayerSwitcher: false,
       recenterPropositions: null,
       showRecenterOnPropositions: false,
-      visibleCartoLayerId: null,
-      reactiveCartoLayers: [],
-      reactiveDataLayers: [],
     };
   },
   computed: {
     mapZoom() {
       return Yetix.mapZoom;
     },
-    showAvalancheBulletins() {
-      return Yetix.showAvalancheBulletins;
+    visibleCartoLayer() {
+      return Yetix.visibleCartoLayer;
+    },
+    visibleDataLayers() {
+      return Yetix.visibleDataLayers;
     },
     showAreas() {
       return Yetix.showAreas;
-    },
-    showNivoses() {
-      return Yetix.showNivoses;
-    },
-    showRomma() {
-      return Yetix.showRomma;
-    },
-    showFlowcapt() {
-      return Yetix.showFlowcapt;
     },
     drawingMode() {
       return Yetix.drawingMode;
@@ -170,75 +115,26 @@ export default {
     validSimplifyTolerance() {
       return Yetix.validSimplifyTolerance;
     },
-    yetiLayers() {
-      return [
-        {
-          title: this.$gettext('YETI extent'),
-          checked: this.showAreas,
-          action: this.onShowAreas,
-        },
-        {
-          title: this.$gettext('Avalanche bulletins'),
-          checked: this.showAvalancheBulletins,
-          action: this.onShowAvalancheBulletins,
-        },
-        {
-          title: this.$gettext('Nivose beacons'),
-          checked: this.showNivoses,
-          action: this.onShowNivoses,
-        },
-        {
-          title: this.$gettext('ROMMA stations'),
-          checked: this.showRomma,
-          action: this.onShowRomma,
-        },
-        {
-          title: this.$gettext('FlowCapt sensors'),
-          checked: this.showFlowcapt,
-          action: this.onShowFlowcapt,
-        },
-      ];
-    },
-    atLeastOneYetiLayerIsShown() {
-      return !!this.yetiLayers.filter((layer) => layer.checked).length;
-    },
-    yetiExtentLayerIsShown() {
-      return this.yetiLayers[0].checked;
-    },
   },
   watch: {
-    yetiExtentLayerIsShown() {
+    showAreas() {
       this.updateCartoLayersOpacity();
     },
-    visibleCartoLayerId(id) {
-      // first, make visible layer invisible
-      let visibleLayer = c2c_cartoLayers.find((layer) => layer.getVisible() === true);
-      visibleLayer.setVisible(false);
-
-      // then, make new layer visible
-      visibleLayer = c2c_cartoLayers.find((layer) => layer.ol_uid === id);
-      visibleLayer.setVisible(true);
-
-      this.emitVisibleLayers();
+    visibleCartoLayer(visibleLayer) {
+      // set each layer visibility based on visible id
+      cartoLayers.forEach((layer) => {
+        layer.setVisible(visibleLayer.id === layer.ol_uid);
+      });
+    },
+    visibleDataLayers(visibleLayers) {
+      let ids = visibleLayers.map((visibleLayer) => visibleLayer.id);
+      // set each layer visibility based on visible ids list
+      dataLayers.forEach((layer) => {
+        layer.setVisible(ids.includes(layer.ol_uid));
+      });
     },
   },
   created() {
-    // build c2c layers
-    c2c_cartoLayers = cartoLayers();
-    c2c_dataLayers = dataLayers();
-
-    // set blend modes
-    c2c_dataLayers = c2c_dataLayers.map((layer) => {
-      layer.setOpacity(0.9);
-      layer.on('prerender', (evt) => {
-        evt.context.globalCompositeOperation = 'multiply';
-      });
-      layer.on('postrender', (evt) => {
-        evt.context.globalCompositeOperation = 'source-over';
-      });
-      return layer;
-    });
-
     // build map
     this.map = new ol.Map({
       controls: [
@@ -252,8 +148,8 @@ export default {
 
       layers: [
         // c2c layers
-        ...c2c_cartoLayers,
-        ...c2c_dataLayers,
+        ...cartoLayers,
+        ...dataLayers,
       ],
 
       view: new ol.View({
@@ -264,22 +160,28 @@ export default {
     });
     this.view = this.map.getView();
 
-    // map carto and data layers to reactive ones
-    this.reactiveCartoLayers = c2c_cartoLayers.map((layer) => {
-      return {
-        title: layer.get('title'),
-        id: layer.ol_uid,
-      };
+    // create layer selectors
+    let [cartoLayersSelector, dataLayersSelector] = [cartoLayers, dataLayers].map((type) => {
+      return type.map((layer) => {
+        return {
+          title: layer.get('title'),
+          id: layer.ol_uid,
+          opacity: layer.getOpacity(),
+          image: layer.get('image'),
+          country: layer.get('country'),
+        };
+      });
     });
-    this.visibleCartoLayerId = c2c_cartoLayers.find((layer) => layer.getVisible() === true).ol_uid;
+    let visibleCartoLayerId = cartoLayers.find((layer) => layer.getVisible() === true).ol_uid;
+    let visibleCartoLayer = cartoLayersSelector.filter((layer) => layer.id === visibleCartoLayerId)[0];
 
-    this.reactiveDataLayers = c2c_dataLayers.map((layer) => {
-      return {
-        title: layer.get('title'),
-        visible: layer.getVisible(),
-        id: layer.ol_uid,
-      };
-    });
+    // store layers
+    Yetix.setCartoLayers(cartoLayers);
+    Yetix.setCartoLayersSelector(cartoLayersSelector);
+    Yetix.setVisibleCartoLayer(visibleCartoLayer);
+
+    Yetix.setDataLayers(dataLayers);
+    Yetix.setDataLayersSelector(dataLayersSelector);
   },
   mounted() {
     // when mounted, bind map to element
@@ -288,7 +190,6 @@ export default {
     let controls = [
       new ol.control.FullScreen({ source: this.$el, tipLabel: this.$gettext('Toggle full-screen', 'Map Controls') }),
       new ol.control.Control({ element: this.$refs.layerSwitcherButton }),
-      new ol.control.Control({ element: this.$refs.layerSwitcher }),
       new ol.control.Control({ element: this.$refs.drawingMode }),
       new ol.control.Control({ element: this.$refs.recenterOnControl }),
       new ol.control.Control({ element: this.$refs.recenterOnPropositions }),
@@ -305,13 +206,6 @@ export default {
         extent = ol.proj.transformExtent(extent, ol.proj.get('EPSG:3857'), ol.proj.get(projection));
       }
       return extent;
-    },
-    toggleMapDataLayer(reactiveLayer) {
-      let layer = c2c_dataLayers.find((layer) => layer.ol_uid === reactiveLayer.id);
-      layer.setVisible(!layer.getVisible());
-      reactiveLayer.visible = !reactiveLayer.visible;
-
-      this.emitVisibleLayers();
     },
     searchRecenterPropositions(event) {
       let query = event.target.value;
@@ -349,8 +243,8 @@ export default {
       if (this.mapZoom !== mapZoom) {
         Yetix.setMapZoom(mapZoom);
       }
-      // if one of Yeti layers is here, update (on zooming for example)
-      if (this.yetiExtentLayerIsShown) {
+      // if Yeti extent is here, update (on zooming for example)
+      if (this.showAreas) {
         this.updateCartoLayersOpacity();
       }
       // emit an event for map layers
@@ -371,7 +265,6 @@ export default {
     },
     onMapClick(evt) {
       // close controls
-      this.showLayerSwitcher = false;
       this.showRecenterOnPropositions = false;
 
       // get clicked feature (the visible one on top)
@@ -380,29 +273,6 @@ export default {
       // emit an event for map layers
       // pass clicked feature
       Yetix.$emit('mapClick', evt, clickedFeature);
-    },
-    emitVisibleLayers() {
-      // emits the indexes (position in layers selector) of actual visible layers
-
-      // find index of cartolayers
-      let cartoLayerIndex = null;
-      this.reactiveCartoLayers.forEach((layer, i) => {
-        if (layer.id === this.visibleCartoLayerId) {
-          cartoLayerIndex = i;
-          return;
-        }
-      });
-
-      // find all visible data layers indexes
-      let dataLayersIndexes = [];
-      this.reactiveDataLayers.forEach((layer, i) => {
-        if (layer.visible) {
-          dataLayersIndexes.push(i);
-          return;
-        }
-      });
-
-      Yetix.$emit('layer-visibility', cartoLayerIndex, dataLayersIndexes);
     },
     updateCartoLayersOpacity() {
       const MIN_ZOOM = Yetix.BLEND_MODES_MIN_ZOOM;
@@ -422,28 +292,20 @@ export default {
         opacity = MAX_OPACITY;
       }
 
-      // for each layers, set opacity if one yeti layers is shown
-      c2c_cartoLayers.forEach((layer) => {
-        layer.setOpacity(this.yetiExtentLayerIsShown ? opacity : 1);
+      // for each carto layers, set opacity if yeti extent is shown
+      cartoLayers.forEach((layer) => {
+        layer.setOpacity(this.showAreas ? opacity : 1);
       });
-    },
-    onShowAvalancheBulletins() {
-      Yetix.setShowAvalancheBulletins(!this.showAvalancheBulletins);
-    },
-    onShowAreas() {
-      Yetix.setShowAreas(!this.showAreas);
-    },
-    onShowNivoses() {
-      Yetix.setShowNivoses(!this.showNivoses);
-    },
-    onShowRomma() {
-      Yetix.setShowRomma(!this.showRomma);
-    },
-    onShowFlowcapt() {
-      Yetix.setShowFlowcapt(!this.showFlowcapt);
     },
     onDrawingMode() {
       Yetix.setDrawingMode(!this.drawingMode);
+    },
+    activeYetiTab() {
+      Yetix.toast({
+        title: this.$gettext('Layers have moved'),
+        message: this.$gettext('Now on the left, on the “Layers” tab'),
+      });
+      Yetix.setActiveTab(0);
     },
   },
 };
@@ -527,6 +389,7 @@ $yeti-height: calc(
 
 .map-container {
   position: relative;
+  padding-left: 0;
 }
 @media screen and (max-width: $tablet) {
   .map-container {

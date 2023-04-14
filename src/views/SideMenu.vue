@@ -33,6 +33,17 @@
         <span class="menu-item-text"> {{ $gettext('Forum') | uppercaseFirstLetter }} </span>
       </span>
     </router-link>
+    <router-link :to="{ name: 'yeti' }">
+      <span
+        class="menu-item is-ellipsed"
+        :class="{
+          'router-link-active': ['yeti'].includes($route.name),
+        }"
+      >
+        <icon-yeti />
+        <span class="menu-item-text"> {{ $gettext('YETI') }} </span>
+      </span>
+    </router-link>
     <router-link :to="{ name: 'serac' }">
       <span
         class="menu-item is-ellipsed"

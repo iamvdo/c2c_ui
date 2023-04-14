@@ -9,6 +9,7 @@
  */
 
 import axios from 'axios';
+import { toast } from 'bulma-toast';
 import Vue from 'vue';
 
 let defaultState = {
@@ -19,7 +20,7 @@ let defaultState = {
   DANGER_MAX_WHEN_MRD: 3,
   VALID_MINIMUM_MAP_ZOOM: 13,
 
-  activeTab: 0,
+  activeTab: 1,
 
   bra: {
     high: null,
@@ -36,6 +37,16 @@ let defaultState = {
     groupSize: 1,
   },
 
+  // layers
+  cartoLayersSelector: [],
+  visibleCartoLayer: null,
+  dataLayersSelector: [],
+  visibleDataLayers: [],
+
+  // yeti layer
+  showYeti: false,
+  yetiOk: false,
+
   areas: [],
   areaOk: true,
   showAreas: false,
@@ -49,7 +60,7 @@ let defaultState = {
     visible: [],
   },
   bulletinsLoaded: false,
-  showAvalancheBulletins: true,
+  showAvalancheBulletins: false,
 
   nivoses: [],
   showNivoses: false,
@@ -72,6 +83,20 @@ let defaultState = {
  * A copy of `defaultState` without reference (to be able to reset default state)
  */
 let state = Vue.observable(JSON.parse(JSON.stringify(defaultState)));
+
+/**
+ * Static state
+ *
+ * A state to store data, but not reactive for Vue
+ * Helpful for OL objects
+ */
+
+let staticState = {
+  // layers
+  cartoLayers: [],
+  dataLayers: [],
+  yetiLayer: null,
+};
 
 /**
  * Exported state
@@ -104,6 +129,24 @@ export default new Vue({
     },
     method() {
       return state.method;
+    },
+    cartoLayersSelector() {
+      return state.cartoLayersSelector;
+    },
+    visibleCartoLayer() {
+      return state.visibleCartoLayer;
+    },
+    dataLayersSelector() {
+      return state.dataLayersSelector;
+    },
+    visibleDataLayers() {
+      return state.visibleDataLayers;
+    },
+    showYeti() {
+      return state.showYeti;
+    },
+    yetiOk() {
+      return state.yetiOk;
     },
     areas() {
       return state.areas;
@@ -173,6 +216,55 @@ export default new Vue({
     },
     setMethod(prop, value) {
       state.method[prop] = value;
+    },
+    setCartoLayers(layers) {
+      staticState.cartoLayers = layers;
+    },
+    setCartoLayersSelector(layers) {
+      state.cartoLayersSelector = layers;
+    },
+    setVisibleCartoLayer(layer) {
+      state.visibleCartoLayer = layer;
+    },
+    setDataLayers(layers) {
+      staticState.dataLayers = layers;
+    },
+    setDataLayersSelector(layers) {
+      state.dataLayersSelector = layers;
+    },
+    setVisibleDataLayer(layer) {
+      // add/remove this id inside visibleDataLayersIds list
+      let pos = -1;
+      state.visibleDataLayers.map((visibleLayer, i) => {
+        if (visibleLayer.id === layer.id) {
+          pos = i;
+        }
+      });
+      if (pos > -1) {
+        state.visibleDataLayers.splice(pos, 1);
+      } else {
+        state.visibleDataLayers.push(layer);
+      }
+    },
+    getDataLayer(layer) {
+      return staticState.dataLayers.filter((dataLayer) => {
+        return dataLayer.ol_uid === layer.id;
+      })[0];
+    },
+    setShowYeti(showYeti) {
+      state.showYeti = showYeti;
+    },
+    setYetiOk(yetiOk) {
+      state.yetiOk = yetiOk;
+      if (yetiOk) {
+        this.setShowYeti(true);
+      }
+    },
+    setYetiLayer(layer) {
+      staticState.yetiLayer = layer;
+    },
+    getYetiLayer() {
+      return staticState.yetiLayer;
     },
     setAreas(areas) {
       state.areas = areas;
@@ -290,6 +382,23 @@ export default new Vue({
         },
       };
       return axios.post(state.API_URL + 'yeti-wps-json', params);
+    },
+    // toasts
+    toast(props) {
+      if (props.title) {
+        props.message = '<div><h2 class="title is-6">' + props.title + '</h2><p>' + props.message + '</p></div>';
+      }
+      toast({
+        ...{
+          duration: 3000,
+          type: 'is-info',
+          pauseOnHover: true,
+          position: 'center',
+          dismissible: true,
+          single: true,
+        },
+        ...props,
+      });
     },
   },
 });
